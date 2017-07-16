@@ -358,3 +358,182 @@ wcData.collect().foreach(println)
 </code></pre>
 
 <p>If you want to look at more code examples of using Spark Core API, checkout <a href="http://spark.apache.org/docs/latest/programming-guide.html">Spark documentation</a> on their website.</p>
+
+
+
+
+<ul>
+	<li><b>DataFrame:</b> It &nbsp;provides a programming abstraction called DataFrames which&nbsp;can act as distributed SQL query engine.</li>
+	<li><b>Data Sources:</b> With the addition of the data sources API, Spark SQL now makes it easier to compute over structured data stored in&nbsp;a wide variety of formats, including Parquet, JSON, and Apache Avro library.</li>
+	<li><b>JDBC Server:</b>&nbsp;The built-in JDBC server makes it easy to connect to the structured data stored in relational database tables&nbsp;and perform big data analytics using the traditional BI tools.</li>
+</ul>
+
+<h2>Spark SQL Components</h2>
+
+<p>The two main components when using Spark SQL are DataFrame and SQLContext.</p>
+
+<p>Let&rsquo;s look at DataFrame first.</p>
+
+<h3>DataFrame</h3>
+
+<p>A <a href="https://spark.apache.org/docs/1.3.0/api/scala/index.html#org.apache.spark.sql.DataFrame">DataFrame</a> is a distributed collection of data organized into named columns. It is based on the data frame concept in R language and is similar to a database table in a relational database.</p>
+
+<p>SchemaRDD in prior versions of Spark SQL API, has been renamed to DataFrame.</p>
+
+<p>DataFrames can be converted to RDDs by calling the <a href="https://spark.apache.org/docs/1.3.0/api/scala/index.html#org.apache.spark.sql.DataFrame">rdd method</a> which returns the content of the DataFrame as an RDD of Rows.</p>
+
+<p>DataFrames can be created from different data sources such as:</p>
+
+<ul>
+	<li>Existing RDDs</li>
+	<li>Structured data files</li>
+	<li>JSON datasets</li>
+	<li>Hive tables</li>
+	<li>External databases</li>
+</ul>
+
+<p>Spark SQL and DataFrame API are available in the following programming languages:</p>
+
+<ul>
+	<li>Scala (https://spark.apache.org/docs/1.3.0/api/scala/index.html#org.apache.spark.sql.package</li>
+	<li>Java (https://spark.apache.org/docs/1.3.0/api/java/index.html?org/apache/spark/sql/api/java/package-summary.html)</li>
+	<li>Python (https://spark.apache.org/docs/1.3.0/api/python/pyspark.sql.html)</li>
+</ul>
+
+<p>Spark SQL code examples we discuss in this article use the Spark Scala Shell program.</p>
+
+<h3>SQLContext</h3>
+
+<p>Spark SQL provides <a href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.sql.SQLContext">SQLContext</a> to encapsulate all relational functionality in Spark. You create the SQLContext from the existing SparkContext that we have seen in the previous examples. Following code snippet shows how to create a SQLContext object.</p>
+
+<pre>
+<code class="language-nolanguage">val sqlContext = new org.apache.spark.sql.SQLContext(sc)</code></pre>
+
+<p>There is also <a href="https://spark.apache.org/docs/1.3.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext">HiveContext</a> which provides a superset of the functionality provided by SQLContext. It can be used to write queries using the HiveQL parser and read data from Hive tables.</p>
+
+<p>Note that you don&#39;t need an existing Hive environment to use the HiveContext in Spark programs.</p>
+
+<h3>JDBC Datasource</h3>
+
+<p>Other features in Spark SQL library include the data sources including the JDBC data source.</p>
+
+<p>JDBC data source can be used to read data from relational databases using JDBC API. This approach is preferred over using the <a href="https://spark.apache.org/docs/1.3.0/api/scala/index.html#org.apache.spark.rdd.JdbcRDD">JdbcRDD</a> because the data source returns the results as a DataFrame which can be processed in Spark SQL or joined with other data sources.</p>
+
+<h3>Sample Spark SQL Application</h3>
+
+<p>In the previous article, we learned how to install the Spark framework on the local machine, how to launch it and interact with it using Spark Scala Shell program. To install the latest version of Spark, download the software from their <a href="http://spark.apache.org/downloads.html">website</a>.</p>
+
+<p>For the code examples in this article, we will use the same Spark Shell to execute the Spark SQL programs. These code examples are for Windows environment. If you are using</p>
+
+<p>To make sure Spark Shell program has enough memory, use the driver-memory command line argument when running spark-shell, as shown in the following command.</p>
+
+<pre>
+<code class="language-nolanguage">spark-shell.cmd --driver-memory 1G</code></pre>
+
+<h2>Spark SQL Application</h2>
+
+<p>Once you have Spark Shell launched, you can run the data analytics queries using Spark SQL API.</p>
+
+<p>In the first example, we&rsquo;ll load the customer data from a text file and create a DataFrame object from the dataset. Then we can run DataFrame functions as specific queries to select the data.</p>
+
+<p>Let&rsquo;s look at the contents of the text file called customers.txt shown below.</p>
+
+<pre>
+<code class="language-nolanguage">100, John Smith, Austin, TX, 78727
+200, Joe Johnson, Dallas, TX, 75201
+300, Bob Jones, Houston, TX, 77028
+400, Andy Davis, San Antonio, TX, 78227
+500, James Williams, Austin, TX, 78727
+</code></pre>
+
+<p>Following code snippet shows the Spark SQL commands you can run on the Spark Shell console.</p>
+
+<pre>
+<code class="language-scala">// Create the SQLContext first from the existing Spark Context
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+
+// Import statement to implicitly convert an RDD to a DataFrame
+import sqlContext.implicits._
+
+// Create a custom class to represent the Customer
+case class Customer(customer_id: Int, name: String, city: String, state: String, zip_code: String)
+
+// Create a DataFrame of Customer objects from the dataset text file.
+val dfCustomers = sc.textFile("data/customers.txt").map(_.split(",")).map(p =&gt; Customer(p(0).trim.toInt, p(1), p(2), p(3), p(4))).toDF()
+
+// Register DataFrame as a table.
+dfCustomers.registerTempTable("customers")
+
+// Display the content of DataFrame
+dfCustomers.show()
+
+// Print the DF schema
+dfCustomers.printSchema()
+
+// Select customer name column
+dfCustomers.select("name").show()
+
+// Select customer name and city columns
+dfCustomers.select("name", "city").show()
+
+// Select a customer by id
+dfCustomers.filter(dfCustomers("customer_id").equalTo(500)).show()
+
+// Count the customers by zip code
+dfCustomers.groupBy("zip_code").count().show()
+</code></pre>
+
+<p>In the above example, the schema is inferred using the reflection. We can also programmatically specify the schema of the dataset. This is useful when the custom classes cannot be defined ahead of time because the structure of data is encoded in a string.</p>
+
+<p>Following code example shows how to specify the schema using the new data type classes StructType, StringType, and StructField.</p>
+
+<pre>
+<code class="language-scala">//
+// Programmatically Specifying the Schema
+//
+
+// Create SQLContext from the existing SparkContext.
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+
+// Create an RDD
+val rddCustomers = sc.textFile("data/customers.txt")
+
+// The schema is encoded in a string
+val schemaString = "customer_id name city state zip_code"
+
+// Import Spark SQL data types and Row.
+import org.apache.spark.sql._
+
+import org.apache.spark.sql.types._;
+
+// Generate the schema based on the string of schema
+val schema = StructType(schemaString.split(" ").map(fieldName =&gt; StructField(fieldName, StringType, true)))
+
+// Convert records of the RDD (rddCustomers) to Rows.
+val rowRDD = rddCustomers.map(_.split(",")).map(p =&gt; Row(p(0).trim,p(1),p(2),p(3),p(4)))
+
+// Apply the schema to the RDD.
+val dfCustomers = sqlContext.createDataFrame(rowRDD, schema)
+
+// Register the DataFrames as a table.
+dfCustomers.registerTempTable("customers")
+
+// SQL statements can be run by using the sql methods provided by sqlContext.
+val custNames = sqlContext.sql("SELECT name FROM customers")
+
+// The results of SQL queries are DataFrames and support all the normal RDD operations.
+// The columns of a row in the result can be accessed by ordinal.
+custNames.map(t =&gt; "Name: " + t(0)).collect().foreach(println)
+
+// SQL statements can be run by using the sql methods provided by sqlContext.
+val customersByCity = sqlContext.sql("SELECT name,zip_code FROM customers ORDER BY zip_code")
+
+// The results of SQL queries are DataFrames and support all the normal RDD operations.
+// The columns of a row in the result can be accessed by ordinal.
+customersByCity.map(t =&gt; t(0) + "," + t(1)).collect().foreach(println)
+</code></pre>
+
+<p>You can also load the data from other data sources like JSON data files, Hive tables, or even relational database tables using the JDBC data source.</p>
+
+<p>As you can see, Spark SQL provides a nice SQL interface to interact with data that&rsquo;s loaded from diverse data sources, using the SQL query syntax which is familiar to the teams. This is especially useful for non-technical project members like data analysts as well as DBAs.</p>
+
